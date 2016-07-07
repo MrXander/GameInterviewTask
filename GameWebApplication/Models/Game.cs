@@ -1,27 +1,29 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
-using GameWebApplication.Models;
+using GameWebApplication.Hubs;
 
-namespace GameWebApplication.Services
+namespace GameWebApplication.Models
 {
     public class Game : IGame, IGameClient
     {
-        private const int CHECK_EVENTS_INTERVAL_MS = 60 / 30 * 100;
-        private readonly ConcurrentDictionary<int, Cell> _cells;
-        private readonly ConcurrentQueue<Action> _events;
+        private const int CHECK_EVENTS_INTERVAL_MS = 60/30*100;
         private readonly Timer _eventsTimer;
+        private readonly object _lockObj = new object();
         private readonly IClientGameHub _playerEvents;
         private readonly ConcurrentDictionary<string, int> _score;
+        public readonly ConcurrentDictionary<int, Cell> Cells;
+        public readonly ConcurrentQueue<Action> Events;
         private DateTime _gameEnded;
         private DateTime _gameStarted;
-        private object _lockObj = new object();
 
         public Game(string gameId, CreateGameModel model, IClientGameHub playerEvents)
         {
+            if (model.PlayersCount <= 1) throw new ArgumentException("Players should be more than 1.");
+
             _playerEvents = playerEvents;
-            _events = new ConcurrentQueue<Action>();
-            _cells = new ConcurrentDictionary<int, Cell>();
+            Events = new ConcurrentQueue<Action>();
+            Cells = new ConcurrentDictionary<int, Cell>();
             _score = new ConcurrentDictionary<string, int>();
             _eventsTimer = new Timer(RunEvents);
 
@@ -34,35 +36,18 @@ namespace GameWebApplication.Services
             InitializeScores();
         }
 
-        private void InitializeScores()
-        {
-            foreach (var player in Players)
-            {
-                Scores.ScoreList.Add(new Score { Name = player.Name });
-            }
-        }
-
-        private void InitializeCells()
-        {
-            for (var i = 0; i < CellsCount; i++)
-            {
-                var c = new Cell { Id = i };
-                _cells.AddOrUpdate(i, c, (idx, oldCell) => c);
-            }
-        }
-
         private string PlayerName { get; }
-        public int PlayersCount { get; }
 
-        public int CellsCount => PlayersCount - 1;
-
-        private int MaxScore => PlayersCount * 3;
+        private int MaxScore => PlayersCount*3;
 
         private TimeSpan Duration => _gameEnded.Subtract(_gameStarted);
 
         private IGameBot[] Bots { get; set; }
         private IGamePlayer[] Players { get; set; }
-        public Scores Scores { get; private set; }
+        public int PlayersCount { get; }
+
+        public int CellsCount => PlayersCount - 1;
+        public Scores Scores { get; }
         public IGamePlayer Player { get; private set; }
 
         public void Start()
@@ -88,7 +73,7 @@ namespace GameWebApplication.Services
 
         public void SetOccupiedCell(int cellId, IGamePlayer player)
         {
-            _events.Enqueue(() =>
+            Events.Enqueue(() =>
             {
                 ResetOccupiedCell(cellId, player);
                 OccupyCell(cellId, player);
@@ -103,12 +88,12 @@ namespace GameWebApplication.Services
 
         public void Click(IGamePlayer player, int cellId)
         {
-            _events.Enqueue(() =>
+            Events.Enqueue(() =>
             {
                 Cell cell;
-                _cells.TryGetValue(cellId, out cell);
+                Cells.TryGetValue(cellId, out cell);
 
-                if (!cell.IsOccupied) return;
+                if (!cell.IsOccupied && cell.OccupiedBy.Id != player.Id) return;
 
                 _score.AddOrUpdate(player.Name, 1, (key, oldValue) =>
                 {
@@ -120,10 +105,29 @@ namespace GameWebApplication.Services
                     return newValue;
                 });
 
+                ResetCell(cellId, player);
+
                 UpdateScores();
 
                 DispatchClientEvent(player.Id, cellId, _playerEvents.ClickClient);
             });
+        }
+
+        private void InitializeScores()
+        {
+            foreach (var player in Players)
+            {
+                Scores.ScoreList.Add(new Score {Name = player.Name});
+            }
+        }
+
+        private void InitializeCells()
+        {
+            for (var i = 0; i < CellsCount; i++)
+            {
+                var c = new Cell {Id = i};
+                Cells.AddOrUpdate(i, c, (idx, oldCell) => c);
+            }
         }
 
         //TODO: refactor this shit
@@ -131,10 +135,10 @@ namespace GameWebApplication.Services
         {
             foreach (var score in Scores.ScoreList)
             {
-                int points = 0;
+                var points = 0;
                 _score.TryGetValue(score.Name, out points);
                 lock (_lockObj)
-                {                    
+                {
                     score.Points = points;
                 }
             }
@@ -167,7 +171,7 @@ namespace GameWebApplication.Services
         private void RunEvents(object state)
         {
             Action e;
-            if (_events.TryDequeue(out e))
+            if (Events.TryDequeue(out e))
             {
                 e();
             }
@@ -184,9 +188,10 @@ namespace GameWebApplication.Services
 
         private void ResetCell(int cellId, IGamePlayer player)
         {
-            var c = new Cell { Id = cellId };
-            _cells.AddOrUpdate(cellId, c, (k, v) => c);
+            var c = new Cell {Id = cellId};
+            Cells.AddOrUpdate(cellId, c, (k, v) => c);
         }
+
         private void OccupyCell(int cellId, IGamePlayer player)
         {
             var c = new Cell
@@ -194,7 +199,7 @@ namespace GameWebApplication.Services
                 Id = cellId,
                 OccupiedBy = player
             };
-            _cells.AddOrUpdate(cellId, c, (k, v) => c);
+            Cells.AddOrUpdate(cellId, c, (k, v) => c);
 
             DispatchClientEvent(player.Id, cellId, _playerEvents.SetOccupiedCellClient);
         }

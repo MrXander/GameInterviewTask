@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using GameWebApplication.Hubs;
 
-namespace GameWebApplication.Services
+namespace GameWebApplication.Models
 {
     internal class GameBot : IGameBot
     {
@@ -28,7 +29,7 @@ namespace GameWebApplication.Services
         public string Name { get; }
 
         public void Start()
-        {            
+        {
             _timer.Change(0, 0);
         }
 
@@ -44,7 +45,7 @@ namespace GameWebApplication.Services
 
         public void Click(int cellId)
         {
-            _game.Click(this, cellId);            
+            _game.Click(this, cellId);
         }
 
         private void MakeTurn(object state)
@@ -70,6 +71,6 @@ namespace GameWebApplication.Services
         private int GetTimeout()
         {
             return _random.Next(MIN_DELAY_MS, MAX_DELAY_MS);
-        }        
+        }
     }
 }

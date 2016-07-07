@@ -1,4 +1,4 @@
-namespace GameWebApplication.Services
+namespace GameWebApplication.Models
 {
     public interface IGamePlayer
     {

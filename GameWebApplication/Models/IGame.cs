@@ -1,13 +1,9 @@
-﻿using GameWebApplication.Models;
-
-namespace GameWebApplication.Services
+﻿namespace GameWebApplication.Models
 {
     public interface IGame
     {
         Scores Scores { get; }
         IGamePlayer Player { get; }
-
-        //IGamePlayer[] Players { get; }
 
         int CellsCount { get; }
 

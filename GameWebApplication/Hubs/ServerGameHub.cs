@@ -2,7 +2,7 @@
 using GameWebApplication.Models;
 using Microsoft.AspNet.SignalR;
 
-namespace GameWebApplication.Services
+namespace GameWebApplication.Hubs
 {
     public class ServerGameHub : Hub, IServerGameHub, IClientGameHub
     {
@@ -37,7 +37,29 @@ namespace GameWebApplication.Services
             RemoveGame();
         }
 
+        private IGamePlayer GetPlayer()
+        {
+            var game = GetGame();
+            return game.Player;
+        }
+
+        private IGame GetGame()
+        {
+            var gameId = Context.ConnectionId;
+            IGame game;
+            Games.TryGetValue(gameId, out game);
+
+            return game;
+        }
+
+        private void RemoveGame()
+        {
+            IGame game;
+            Games.TryRemove(Context.ConnectionId, out game);
+        }
+
         #region Client
+
         public void ResetOccupiedCellClient(int cellId)
         {
             Clients.Caller.resetOccupied(cellId);
@@ -62,34 +84,5 @@ namespace GameWebApplication.Services
         }
 
         #endregion
-
-        private IGamePlayer GetPlayer()
-        {            
-            var game = GetGame();
-            return game.Player;
-        }
-
-        private IGame GetGame()
-        {
-            var gameId = Context.ConnectionId;
-            IGame game;
-            Games.TryGetValue(gameId, out game);
-
-            return game;
-        }
-
-        private void RemoveGame()
-        {
-            IGame game;
-            Games.TryRemove(Context.ConnectionId, out game);
-        }
-    }
-
-    public interface IServerGameHub
-    {
-        void CreateGame(CreateGameModel model);
-        void SetOccupied(int cellId);
-        void Click(int cellId);
-        void GameOver(Scores scores);
     }
 }
