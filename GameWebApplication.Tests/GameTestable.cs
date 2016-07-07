@@ -5,7 +5,7 @@ using GameWebApplication.Models;
 
 namespace GameWebApplication.Tests
 {
-    internal class GameTestable: Game
+    public class GameTestable: Game
     {
         public new ConcurrentDictionary<int, Cell> Cells => base.Cells;
         public new ConcurrentQueue<Action> Events => base.Events;

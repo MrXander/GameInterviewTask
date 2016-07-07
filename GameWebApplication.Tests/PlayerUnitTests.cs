@@ -25,14 +25,7 @@ namespace GameWebApplication.Tests
 
             Assert.IsTrue(game.Cells[cellId].IsOccupied); 
         }
-
-        private static Action GetFirstEvent(GameTestable game)
-        {
-            Action a;
-            game.Events.TryDequeue(out a);
-            return a;            
-        }
-
+       
         [TestMethod]
         public void ClickTest()
         {

@@ -1,4 +1,5 @@
-﻿using GameWebApplication.Hubs;
+﻿using System;
+using GameWebApplication.Hubs;
 using GameWebApplication.Models;
 using Moq;
 
@@ -14,5 +15,13 @@ namespace GameWebApplication.Tests
             hubMock.Setup(x => x.GameOverClient(new Scores()));
             return hubMock;
         }
+
+        protected static Action GetFirstEvent(GameTestable game)
+        {
+            Action a;
+            game.Events.TryDequeue(out a);
+            return a;
+        }
+
     }
 }
