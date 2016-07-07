@@ -1,0 +1,14 @@
+/*@import "./../../node_modules/normalize.css/normalize.css";*/
+
+html, body {
+    padding: 0;
+    margin: 0;
+}
+
+.hidden {
+    display: none;
+}
+
+.block {
+    display: block;
+}
