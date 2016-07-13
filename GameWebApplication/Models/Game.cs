@@ -12,8 +12,8 @@ namespace GameWebApplication.Models
         private readonly object _lockObj = new object();
         private readonly IClientGameHub _playerEvents;
         private readonly ConcurrentDictionary<string, int> _score;
-        public readonly ConcurrentDictionary<int, Cell> Cells;
-        public readonly ConcurrentQueue<Action> Events;
+        protected readonly ConcurrentDictionary<int, Cell> Cells;
+        protected readonly ConcurrentQueue<Action> Events;
         private DateTime _gameEnded;
         private DateTime _gameStarted;
 
@@ -92,8 +92,8 @@ namespace GameWebApplication.Models
             {
                 Cell cell;
                 Cells.TryGetValue(cellId, out cell);
-
-                if (!cell.IsOccupied && cell.OccupiedBy.Id != player.Id) return;
+                
+                if (!cell.IsOccupied || cell.OccupiedBy.Id != player.Id) return;                                
 
                 _score.AddOrUpdate(player.Name, 1, (key, oldValue) =>
                 {

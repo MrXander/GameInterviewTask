@@ -47,6 +47,7 @@ class Game extends React.Component {
             console.log('Server. Game over');
             console.log(game);
             self.setState({ game: game });
+            alert('Game over');
         };
     };
 

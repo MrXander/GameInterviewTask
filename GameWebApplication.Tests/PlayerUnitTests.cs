@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace GameWebApplication.Tests
 {
     [TestClass]
-    public class PlayerUnitTests: BaseMock
+    public class PlayerUnitTests : BaseMock
     {
         [TestMethod]
         public void SetOccupiedTest()
@@ -24,6 +24,8 @@ namespace GameWebApplication.Tests
             a(); //execute occupied event
 
             Assert.IsTrue(game.Cells[cellId].IsOccupied); 
+            Assert.IsNotNull(game.Cells[cellId].OccupiedBy); 
+            Assert.IsTrue(game.Cells[cellId].OccupiedBy.Id == player.Id); 
         }
        
         [TestMethod]
